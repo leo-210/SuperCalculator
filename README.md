@@ -27,5 +27,5 @@ build up an experience.
 ## Contributing 
   This is a personal project more than anything, so I'll most likely not accept pull requests.
   
-  If you have a suggestion, or if you encountered a bug, feel free to open an issue.
+  If you have a suggestion, or if you encountered a bug, feel free to open an [issue](https://github.com/leo-210/SuperCalculator/issues).
  
