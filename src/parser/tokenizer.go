@@ -78,7 +78,7 @@ func Tokenize(textInput string) ([]Token, error) {
 			i -= 1
 
 		default:
-			return tokenList, errors.InvalidCharacter{Character: char, Position: i}
+			return tokenList, errors.InvalidCharacterError{Character: char, Position: i}
 		}
 
 		i++
