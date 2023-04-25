@@ -1,8 +1,11 @@
 package parser
 
 import (
+	"SuperCalculator/src/defined_identifiers"
 	"SuperCalculator/src/errors"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type NodeType int
@@ -14,6 +17,8 @@ const (
 	DIV
 	POW
 	VALUE
+	VARIABLE
+	FUNCTION
 )
 
 func (nodeType NodeType) String() string {
@@ -69,7 +74,7 @@ func parseExpression(tokenList []Token, index int) (Node, int, error) {
 	var token = tokenList[i]
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
 		node, i, err = parseTerm(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -122,7 +127,7 @@ func parseTerm(tokenList []Token, index int) (Node, int, error) {
 	var node Node
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
 		node, i, err = parseFactor(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -176,7 +181,7 @@ func parseFactor(tokenList []Token, index int) (Node, int, error) {
 	var node Node
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
 		node, i, err = parseAtom(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -247,6 +252,49 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 
 		return node, i, err
 
+	case IDENTIFIER:
+		var value, ok = defined_identifiers.Constants[token.Value]
+		if ok {
+			return Node{Type: VALUE, Value: fmt.Sprintf("%.14f", value)}, i + 1, nil
+		}
+		_, ok = defined_identifiers.Functions[token.Value]
+
+		if ok {
+			var body Node
+			body, i, err = parseAtom(tokenList, i+1)
+			return Node{Type: FUNCTION, Value: token.Value, Left: &body}, i, err
+		}
+
+		if strings.HasPrefix(token.Value, "sqrt") {
+			var number, _ = strings.CutPrefix(token.Value, "sqrt")
+
+			_, err = strconv.ParseInt(number, 10, 32)
+
+			if err != nil {
+				return Node{Type: VARIABLE, Value: number}, i, nil
+			}
+			var base Node
+			base, i, err = parseAtom(tokenList, i+1)
+
+			return Node{
+				Type: POW,
+				Left: &base,
+				Right: &Node{
+					Type: DIV,
+					Left: &Node{
+						Type:  VALUE,
+						Value: "1",
+					},
+					Right: &Node{
+						Type:  VALUE,
+						Value: number,
+					},
+				},
+			}, i, err
+		}
+
+		return Node{Type: VARIABLE, Value: token.Value}, i + 1, nil
+
 	default:
 		return Node{}, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
@@ -267,6 +315,10 @@ func ASTToString(ast Node) string {
 		return fmt.Sprintf("(%s ^ %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
 	case VALUE:
 		return ast.Value
+	case VARIABLE:
+		return ast.Value
+	case FUNCTION:
+		return fmt.Sprintf("%s( %s )", ast.Value, ASTToString(*ast.Left))
 	default:
 		return ""
 	}

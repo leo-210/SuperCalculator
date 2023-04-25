@@ -77,6 +77,14 @@ func Tokenize(textInput string) ([]Token, error) {
 
 			i -= 1
 
+		case unicode.IsLetter(rune(char)):
+			var identifier string
+			identifier, i = makeIdentifier(textInput, i)
+
+			tokenList = append(tokenList, Token{IDENTIFIER, identifier})
+
+			i -= 1
+
 		default:
 			return tokenList, errors.InvalidCharacterError{Character: char, Position: i}
 		}
@@ -120,4 +128,23 @@ func makeNumber(textInput string, index int) (string, int) {
 		number = "0" + number
 	}
 	return number, i
+}
+
+func makeIdentifier(textInput string, index int) (string, int) {
+	var identifier = string(textInput[index])
+
+	var i = index + 1
+
+	for i < len(textInput) {
+		var char = textInput[i]
+
+		if !unicode.IsLetter(rune(char)) && !unicode.IsDigit(rune(char)) {
+			break
+		}
+
+		identifier = identifier + string(char)
+		i++
+	}
+
+	return identifier, i
 }
