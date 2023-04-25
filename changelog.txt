@@ -8,5 +8,10 @@
             |_|
 
 
+###   26/04/23 - SuperCalculator v0.2.0   ###
+- Added functions and constants
+- Added custom variables
+
+
 ###   25/04/23 - SuperCalculator v0.1.0   ###
 - Basic CLI app for basic calculations
