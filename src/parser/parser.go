@@ -1,6 +1,9 @@
 package parser
 
-import "SuperCalculator/src/errors"
+import (
+	"SuperCalculator/src/errors"
+	"fmt"
+)
 
 type NodeType int
 
@@ -32,13 +35,27 @@ type Node struct {
 }
 
 func Parse(tokenList []Token) (Node, error) {
-	var nodeList, _, err = parseExpression(tokenList, 0)
+	var nodeList, err = parseStatement(tokenList)
 
 	if err != nil {
 		return nodeList, err
 	}
 
 	return nodeList, nil
+}
+
+func parseStatement(tokenList []Token) (Node, error) {
+	var node, i, err = parseExpression(tokenList, 0)
+
+	if err != nil {
+		return node, err
+	}
+
+	if i < len(tokenList) {
+		return node, errors.SyntaxError{Message: "unexpected character", Position: i}
+	}
+
+	return node, nil
 }
 
 func parseExpression(tokenList []Token, index int) (Node, int, error) {
@@ -98,7 +115,7 @@ func parseTerm(tokenList []Token, index int) (Node, int, error) {
 	var i = index
 
 	if i >= len(tokenList) {
-		return Node{}, i, errors.SyntaxError{Message: "syntax error1", Position: i}
+		return Node{}, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
 
 	var token = tokenList[i]
@@ -111,7 +128,7 @@ func parseTerm(tokenList []Token, index int) (Node, int, error) {
 			return node, i, err
 		}
 	} else {
-		return node, i, errors.SyntaxError{Message: "syntax error2", Position: i}
+		return node, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
 
 	for i < len(tokenList) {
@@ -152,7 +169,7 @@ func parseFactor(tokenList []Token, index int) (Node, int, error) {
 	var i = index
 
 	if i >= len(tokenList) {
-		return Node{}, i, errors.SyntaxError{Message: "syntax error3", Position: i}
+		return Node{}, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
 
 	var token = tokenList[i]
@@ -165,7 +182,7 @@ func parseFactor(tokenList []Token, index int) (Node, int, error) {
 			return node, i, err
 		}
 	} else {
-		return node, i, errors.SyntaxError{Message: "syntax error4", Position: i}
+		return node, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
 
 	for i < len(tokenList) {
@@ -196,7 +213,7 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 	var i = index
 
 	if i >= len(tokenList) {
-		return Node{}, i, errors.SyntaxError{Message: "syntax error5", Position: i}
+		return Node{}, i, errors.SyntaxError{Message: "syntax error", Position: i}
 	}
 
 	var token = tokenList[i]
@@ -204,7 +221,13 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 
 	switch token.Type {
 	case PLUS, MINUS:
-		var firstNode = Node{Type: VALUE, Value: "-1"}
+		var firstNode Node
+
+		if token.Type == PLUS {
+			firstNode = Node{Type: VALUE, Value: "1"}
+		} else {
+			firstNode = Node{Type: VALUE, Value: "-1"}
+		}
 		var secondNode Node
 
 		secondNode, i, err = parseAtom(tokenList, i+1)
@@ -225,6 +248,26 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 		return node, i, err
 
 	default:
-		return Node{}, i, errors.SyntaxError{Message: "syntax error6", Position: i}
+		return Node{}, i, errors.SyntaxError{Message: "syntax error", Position: i}
+	}
+}
+
+// ASTToString For debugging purposes
+func ASTToString(ast Node) string {
+	switch ast.Type {
+	case ADD:
+		return fmt.Sprintf("(%s + %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
+	case SUB:
+		return fmt.Sprintf("(%s - %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
+	case MUL:
+		return fmt.Sprintf("(%s * %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
+	case DIV:
+		return fmt.Sprintf("(%s / %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
+	case POW:
+		return fmt.Sprintf("(%s ^ %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
+	case VALUE:
+		return ast.Value
+	default:
+		return ""
 	}
 }
