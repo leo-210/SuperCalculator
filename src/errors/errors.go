@@ -35,3 +35,17 @@ type SyntaxError struct {
 func (err SyntaxError) Error() string {
 	return fmt.Sprintf("%s at position %d", err.Message, err.Position)
 }
+
+type MathError struct {
+	Message string
+}
+
+func (err MathError) Error() string {
+	return err.Message
+}
+
+type NotImplementedYetError struct{}
+
+func (err NotImplementedYetError) Error() string {
+	return "feature not fully implemented yet"
+}
