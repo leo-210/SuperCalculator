@@ -15,8 +15,8 @@ build up an experience.
 
 
 ## Roadmap
-  - [ ] Math expression parser
-  - [ ] Computing calculations
+  - [x] Math expression parser
+  - [x] Computing calculations
   - [ ] Custom variable and constants (such as PI)
   - [ ] Math expression simplifier
   - [ ] Derivative of a function
