@@ -22,6 +22,9 @@ func main() {
 		cyan("quit"),
 	)
 
+	var variables = make(map[string]float64)
+	var mode = 0
+
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Printf("%s > ", green("SuperCalculator"))
@@ -51,12 +54,17 @@ func main() {
 		}
 
 		var result string
-		result, err = interpreter.Interpret(ast)
+		result, variables, err = interpreter.Interpret(ast, variables, mode)
 		if err != nil {
 			color.Red("error: %s", err)
 			continue
 		}
 
-		fmt.Printf("%s = %s\n", text, cyan(result))
+		if result == "engineer-mode" {
+			color.Red("Engineer mode activated. All results will be rounded.")
+			mode = 1
+		} else if result != "" {
+			fmt.Printf("%s = %s\n", text, cyan(result))
+		}
 	}
 }

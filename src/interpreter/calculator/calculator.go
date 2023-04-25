@@ -8,16 +8,16 @@ import (
 	"strconv"
 )
 
-func Calculate(ast parser.Node) (float64, error) {
+func Calculate(ast parser.Node, variables map[string]float64) (float64, error) {
 	switch ast.Type {
 	case parser.ADD:
-		var left, err = Calculate(*ast.Left)
+		var left, err = Calculate(*ast.Left, variables)
 		if err != nil {
 			return 0, err
 		}
 
 		var right float64
-		right, err = Calculate(*ast.Right)
+		right, err = Calculate(*ast.Right, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -25,13 +25,13 @@ func Calculate(ast parser.Node) (float64, error) {
 		return left + right, nil
 
 	case parser.SUB:
-		var left, err = Calculate(*ast.Left)
+		var left, err = Calculate(*ast.Left, variables)
 		if err != nil {
 			return 0, err
 		}
 
 		var right float64
-		right, err = Calculate(*ast.Right)
+		right, err = Calculate(*ast.Right, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -39,13 +39,13 @@ func Calculate(ast parser.Node) (float64, error) {
 		return left - right, nil
 
 	case parser.MUL:
-		var left, err = Calculate(*ast.Left)
+		var left, err = Calculate(*ast.Left, variables)
 		if err != nil {
 			return 0, err
 		}
 
 		var right float64
-		right, err = Calculate(*ast.Right)
+		right, err = Calculate(*ast.Right, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -53,7 +53,7 @@ func Calculate(ast parser.Node) (float64, error) {
 		return left * right, nil
 
 	case parser.DIV:
-		var right, err = Calculate(*ast.Right)
+		var right, err = Calculate(*ast.Right, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -63,7 +63,7 @@ func Calculate(ast parser.Node) (float64, error) {
 		}
 
 		var left float64
-		left, err = Calculate(*ast.Left)
+		left, err = Calculate(*ast.Left, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -71,13 +71,13 @@ func Calculate(ast parser.Node) (float64, error) {
 		return left / right, nil
 
 	case parser.POW:
-		var left, err = Calculate(*ast.Left)
+		var left, err = Calculate(*ast.Left, variables)
 		if err != nil {
 			return 0, err
 		}
 
 		var right float64
-		right, err = Calculate(*ast.Right)
+		right, err = Calculate(*ast.Right, variables)
 		if err != nil {
 			return 0, err
 		}
@@ -98,7 +98,7 @@ func Calculate(ast parser.Node) (float64, error) {
 
 	case parser.FUNCTION:
 		var function, _ = defined_identifiers.Functions[ast.Value]
-		var body, err = Calculate(*ast.Left)
+		var body, err = Calculate(*ast.Left, variables)
 
 		if err != nil {
 			return 0, err
@@ -123,6 +123,15 @@ func Calculate(ast parser.Node) (float64, error) {
 		}
 
 		return function(body), nil
+
+	case parser.VARIABLE:
+		var value, ok = variables[ast.Value]
+		if !ok {
+			return 0, errors.UndefinedVariableError{Name: ast.Value}
+		}
+
+		return value, nil
+
 	default:
 		return 0, errors.NotImplementedYetError{}
 	}

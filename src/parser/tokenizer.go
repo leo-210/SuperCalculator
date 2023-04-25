@@ -18,6 +18,7 @@ const (
 	RPAREN
 	NUMBER
 	IDENTIFIER
+	EQUAL
 )
 
 func (tokenType TokenType) String() string {
@@ -31,6 +32,7 @@ func (tokenType TokenType) String() string {
 		"RPAREN",
 		"NUMBER",
 		"IDENTIFIER",
+		"EQUAL",
 	}[tokenType]
 }
 
@@ -63,6 +65,8 @@ func Tokenize(textInput string) ([]Token, error) {
 			tokenList = append(tokenList, Token{LPAREN, ""})
 		case char == ')':
 			tokenList = append(tokenList, Token{RPAREN, ""})
+		case char == '=':
+			tokenList = append(tokenList, Token{EQUAL, ""})
 
 		case unicode.IsSpace(rune(char)):
 			// Do nothing

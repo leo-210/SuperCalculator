@@ -49,3 +49,24 @@ type NotImplementedYetError struct{}
 func (err NotImplementedYetError) Error() string {
 	return "feature not fully implemented yet"
 }
+
+type UndefinedVariableError struct {
+	Name string
+}
+
+func (err UndefinedVariableError) Error() string {
+	return fmt.Sprintf(
+		"Variable '%s' is undefined. Type '%s = [expression]' to define this variable",
+		err.Name,
+		err.Name,
+	)
+}
+
+type AlreadyDefinedIdentifierError struct {
+	IdentifierType string
+	Name           string
+}
+
+func (err AlreadyDefinedIdentifierError) Error() string {
+	return fmt.Sprintf("'%s' is a %s, you can not redefine it", err.Name, err.IdentifierType)
+}

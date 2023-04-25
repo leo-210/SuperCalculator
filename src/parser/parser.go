@@ -18,6 +18,7 @@ const (
 	POW
 	VALUE
 	VARIABLE
+	SET_VARIABLE
 	FUNCTION
 )
 
@@ -29,6 +30,9 @@ func (nodeType NodeType) String() string {
 		"DIV",
 		"POW",
 		"VALUE",
+		"VARIABLE",
+		"SET_VARIABLE",
+		"FUNCTION",
 	}[nodeType]
 }
 
@@ -40,6 +44,10 @@ type Node struct {
 }
 
 func Parse(tokenList []Token) (Node, error) {
+	if len(tokenList) == 0 {
+		return Node{}, nil
+	}
+
 	var nodeList, err = parseStatement(tokenList)
 
 	if err != nil {
@@ -50,7 +58,41 @@ func Parse(tokenList []Token) (Node, error) {
 }
 
 func parseStatement(tokenList []Token) (Node, error) {
-	var node, i, err = parseExpression(tokenList, 0)
+	var token = tokenList[0]
+
+	var node Node
+	var err error
+	var i int
+
+	switch token.Type {
+	case IDENTIFIER:
+		if len(tokenList) > 2 && tokenList[1].Type == EQUAL {
+			if (token.Value == "pi" || token.Value == "PI") && tokenList[2].Type == NUMBER && tokenList[2].Value == "5" {
+				node = Node{Type: SET_VARIABLE, Left: &Node{Type: VALUE, Value: "5"}, Value: "pi"}
+				return node, nil
+			}
+
+			var _, ok = defined_identifiers.Constants[token.Value]
+			if !ok {
+				_, ok = defined_identifiers.Functions[token.Value]
+				if !ok {
+					var expr Node
+					expr, i, err = parseExpression(tokenList, 2)
+
+					node = Node{Type: SET_VARIABLE, Left: &expr, Value: token.Value}
+				} else {
+					return Node{}, errors.AlreadyDefinedIdentifierError{IdentifierType: "function", Name: token.Value}
+				}
+			} else {
+				return Node{}, errors.AlreadyDefinedIdentifierError{IdentifierType: "constant", Name: token.Value}
+			}
+		} else {
+			node, i, err = parseExpression(tokenList, 0)
+		}
+
+	default:
+		node, i, err = parseExpression(tokenList, 0)
+	}
 
 	if err != nil {
 		return node, err
@@ -319,6 +361,8 @@ func ASTToString(ast Node) string {
 		return ast.Value
 	case FUNCTION:
 		return fmt.Sprintf("%s( %s )", ast.Value, ASTToString(*ast.Left))
+	case SET_VARIABLE:
+		return fmt.Sprintf("%s = %s", ast.Value, ASTToString(*ast.Left))
 	default:
 		return ""
 	}
