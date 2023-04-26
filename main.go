@@ -29,7 +29,7 @@ func main() {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Printf("%s > ", green("SuperCalculator"))
 		text, _ := reader.ReadString('\n')
-		text = strings.TrimSuffix(text, "\n")
+		text = strings.TrimSpace(text)
 
 		if text == "exit" || text == "quit" || text == "q" || text == "Q" {
 			os.Exit(0)
@@ -65,6 +65,7 @@ func main() {
 			mode = 1
 		} else if result != "" {
 			fmt.Printf("%s = %s\n", text, cyan(result))
+			// color.Cyan(result)
 		}
 	}
 }
