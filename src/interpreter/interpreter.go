@@ -25,7 +25,7 @@ func Interpret(ast parser.Node, variables map[string]float64, mode int) (string,
 		var err error
 		variables[ast.Value], err = calculator.Calculate(*ast.Left, variables)
 
-		return "", variables, err
+		return "set " + ast.Value, variables, err
 	}
 
 	var result, err = calculator.Calculate(ast, variables)
