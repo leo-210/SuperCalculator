@@ -20,6 +20,8 @@ const (
 	VARIABLE
 	SET_VARIABLE
 	FUNCTION
+	X
+	DERIVE
 )
 
 func (nodeType NodeType) String() string {
@@ -33,6 +35,8 @@ func (nodeType NodeType) String() string {
 		"VARIABLE",
 		"SET_VARIABLE",
 		"FUNCTION",
+		"X",
+		"DERIVE",
 	}[nodeType]
 }
 
@@ -65,6 +69,14 @@ func parseStatement(tokenList []Token) (Node, error) {
 	var i int
 
 	switch token.Type {
+	case KEYWORD:
+		switch token.Value {
+		case "derive":
+			var expr Node
+			expr, i, err = parseExpression(tokenList, 2)
+
+			node = Node{Type: DERIVE, Left: &expr, Value: token.Value}
+		}
 	case IDENTIFIER:
 		if len(tokenList) > 2 && tokenList[1].Type == EQUAL {
 			if (token.Value == "pi" || token.Value == "PI") && tokenList[2].Type == NUMBER && tokenList[2].Value == "5" {
@@ -116,7 +128,7 @@ func parseExpression(tokenList []Token, index int) (Node, int, error) {
 	var token = tokenList[i]
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER || token.Type == T_X {
 		node, i, err = parseTerm(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -169,7 +181,7 @@ func parseTerm(tokenList []Token, index int) (Node, int, error) {
 	var node Node
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER || token.Type == T_X {
 		node, i, err = parseFactor(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -187,6 +199,16 @@ func parseTerm(tokenList []Token, index int) (Node, int, error) {
 			var firstNode = node
 			var secondNode Node
 			secondNode, i, err = parseFactor(tokenList, i+1)
+
+			node = Node{Left: &firstNode, Right: &secondNode, Type: MUL}
+
+			if err != nil {
+				return node, i, err
+			}
+		case IDENTIFIER, LPAREN, T_X:
+			var firstNode = node
+			var secondNode Node
+			secondNode, i, err = parseFactor(tokenList, i)
 
 			node = Node{Left: &firstNode, Right: &secondNode, Type: MUL}
 
@@ -223,7 +245,7 @@ func parseFactor(tokenList []Token, index int) (Node, int, error) {
 	var node Node
 	var err error
 
-	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER {
+	if token.Type == PLUS || token.Type == MINUS || token.Type == LPAREN || token.Type == NUMBER || token.Type == IDENTIFIER || token.Type == T_X {
 		node, i, err = parseAtom(tokenList, i)
 		if err != nil {
 			return node, i, err
@@ -293,7 +315,8 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 		i++
 
 		return node, i, err
-
+	case T_X:
+		return Node{Type: X}, i + 1, nil
 	case IDENTIFIER:
 		var value, ok = defined_identifiers.Constants[token.Value]
 		if ok {
@@ -313,7 +336,7 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 			_, err = strconv.ParseInt(number, 10, 32)
 
 			if err != nil {
-				return Node{Type: VARIABLE, Value: number}, i, nil
+				return Node{Type: VARIABLE, Value: token.Value}, i, nil
 			}
 			var base Node
 			base, i, err = parseAtom(tokenList, i+1)
@@ -342,7 +365,6 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 	}
 }
 
-// ASTToString For debugging purposes
 func ASTToString(ast Node) string {
 	switch ast.Type {
 	case ADD:
@@ -363,6 +385,8 @@ func ASTToString(ast Node) string {
 		return fmt.Sprintf("%s( %s )", ast.Value, ASTToString(*ast.Left))
 	case SET_VARIABLE:
 		return fmt.Sprintf("%s = %s", ast.Value, ASTToString(*ast.Left))
+	case X:
+		return "x"
 	default:
 		return ""
 	}

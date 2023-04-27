@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"SuperCalculator/src/defined_identifiers"
 	"SuperCalculator/src/errors"
 	"strings"
 	"unicode"
@@ -19,6 +20,8 @@ const (
 	NUMBER
 	IDENTIFIER
 	EQUAL
+	KEYWORD
+	T_X
 )
 
 func (tokenType TokenType) String() string {
@@ -33,6 +36,8 @@ func (tokenType TokenType) String() string {
 		"NUMBER",
 		"IDENTIFIER",
 		"EQUAL",
+		"KEYWORD",
+		"T_X",
 	}[tokenType]
 }
 
@@ -67,6 +72,8 @@ func Tokenize(textInput string) ([]Token, error) {
 			tokenList = append(tokenList, Token{RPAREN, ""})
 		case char == '=':
 			tokenList = append(tokenList, Token{EQUAL, ""})
+		case char == 'x':
+			tokenList = append(tokenList, Token{T_X, ""})
 
 		case unicode.IsSpace(rune(char)):
 			// Do nothing
@@ -85,8 +92,14 @@ func Tokenize(textInput string) ([]Token, error) {
 			var identifier string
 			identifier, i = makeIdentifier(textInput, i)
 
-			tokenList = append(tokenList, Token{IDENTIFIER, identifier})
+			var token = Token{IDENTIFIER, identifier}
+			for _, v := range defined_identifiers.Keywords {
+				if v == identifier {
+					token = Token{KEYWORD, identifier}
+				}
+			}
 
+			tokenList = append(tokenList, token)
 			i -= 1
 
 		default:
