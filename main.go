@@ -61,7 +61,7 @@ func main() {
 			continue
 		}
 
-		var result string
+		var result interpreter.Result
 		result, variables, err = interpreter.Interpret(ast, variables, mode)
 		if err != nil {
 			color.Red("error: %s", err)
@@ -70,16 +70,16 @@ func main() {
 
 		previousPrompt = text
 
-		if result == "engineer-mode" {
+		if result.Type == interpreter.ENGINEER_MODE {
 			color.Red("Engineer mode activated. All results will be rounded.")
 			mode = 1
-		} else if strings.HasPrefix(result, "set ") {
-			var variable, _ = strings.CutPrefix(result, "set ")
-			var value = strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", variables[variable]), "0"), ".")
-			fmt.Printf("%s = %s\n", variable, cyan(value))
-		} else if result != "" {
-			fmt.Printf("%s = %s\n", text, cyan(result))
-			previousAnswer = result
+		} else if result.Type == interpreter.SET_VARIABLE {
+			fmt.Printf("%s = %s\n", result.VarName, cyan(result.Value))
+		} else if result.Type == interpreter.VALUE {
+			fmt.Printf("%s = %s\n", text, cyan(result.Value))
+			previousAnswer = result.Value
+		} else if result.Type == interpreter.EXPRESSION {
+			fmt.Printf("%s = %s\n", text, cyan(result.Value))
 		}
 	}
 }

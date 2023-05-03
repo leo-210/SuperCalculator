@@ -73,7 +73,7 @@ func parseStatement(tokenList []Token) (Node, error) {
 		switch token.Value {
 		case "derive":
 			var expr Node
-			expr, i, err = parseExpression(tokenList, 2)
+			expr, i, err = parseExpression(tokenList, 1)
 
 			node = Node{Type: DERIVE, Left: &expr, Value: token.Value}
 		}
@@ -374,6 +374,13 @@ func ASTToString(ast Node) string {
 	case SUB:
 		return fmt.Sprintf("(%s - %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
 	case MUL:
+		if ast.Left.Type == VALUE && ast.Left.Value == "-1" {
+			return fmt.Sprintf("-%s", ASTToString(*ast.Right))
+		}
+		if ast.Right.Type == VALUE && ast.Right.Value == "-1" {
+			return fmt.Sprintf("(-%s)", ASTToString(*ast.Left))
+		}
+
 		return fmt.Sprintf("(%s * %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
 	case DIV:
 		return fmt.Sprintf("(%s / %s)", ASTToString(*ast.Left), ASTToString(*ast.Right))
@@ -394,6 +401,8 @@ func ASTToString(ast Node) string {
 		return fmt.Sprintf("%s = %s", ast.Value, ASTToString(*ast.Left))
 	case X:
 		return "x"
+	case DERIVE:
+		return fmt.Sprintf("derive %s", ASTToString(*ast.Left))
 	default:
 		return ""
 	}

@@ -10,278 +10,188 @@ import (
 	"strings"
 )
 
-func Calculate(ast parser.Node, variables map[string]float64, mode int) (string, error) {
-	var result float64
-
+func Calculate(ast parser.Node, variables map[string]float64) (parser.Node, error) {
 	switch ast.Type {
-	case parser.ADD:
+	case parser.ADD, parser.SUB, parser.MUL, parser.DIV, parser.POW:
 		if ast.Left.Type == parser.X && ast.Right.Type == parser.X {
-			return parser.ASTToString(ast), nil
-		}
-		if ast.Left.Type == parser.X {
-			var right, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
+			if ast.Type == parser.SUB {
+				return parser.MakeValueNode("0"), nil
 			}
-			return fmt.Sprintf("(x + %s)", right), nil
+
+			return ast, nil
 		}
-		if ast.Right.Type == parser.X {
-			var left, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
+
+		var left, err = Calculate(*ast.Left, variables)
+		if err != nil {
+			return parser.Node{}, err
+		}
+
+		var right parser.Node
+		right, err = Calculate(*ast.Right, variables)
+		if err != nil {
+			return parser.Node{}, err
+		}
+
+		if left.Type != parser.VALUE && right.Type != parser.VALUE {
+			return parser.MakeOperationNode(
+				ast.Type,
+				left,
+				right,
+			), nil
+		}
+		if right.Type == parser.VALUE && left.Type != parser.VALUE {
+			if right.Value == "0" {
+				if ast.Type == parser.ADD || ast.Type == parser.SUB {
+					return left, nil
+				}
+				if ast.Type == parser.MUL {
+					return parser.MakeValueNode("0"), nil
+				}
+				if ast.Type == parser.DIV {
+					return parser.Node{}, errors.MathError{Message: "division by zero"}
+				}
+			} else if right.Value == "1" {
+				if ast.Type == parser.MUL || ast.Type == parser.DIV {
+					return left, nil
+				}
 			}
-			return fmt.Sprintf("(%s + x)", left), nil
+
+			return parser.Node{
+				Type:  ast.Type,
+				Left:  &left,
+				Right: &right,
+			}, nil
 		}
-
-		var left, err = Calculate(*ast.Left, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		var right string
-		right, err = Calculate(*ast.Right, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(left, "x") || strings.Contains(right, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var leftF, _ = strconv.ParseFloat(left, 64)
-		var rightF, _ = strconv.ParseFloat(right, 64)
-
-		result = leftF + rightF
-
-	case parser.SUB:
-		if ast.Left.Type == parser.X && ast.Right.Type == parser.X {
-			return parser.ASTToString(ast), nil
-		}
-		if ast.Left.Type == parser.X {
-			var right, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
+		if left.Type == parser.VALUE && right.Type != parser.VALUE {
+			if left.Value == "0" {
+				if ast.Type == parser.ADD {
+					return right, nil
+				}
+				if ast.Type == parser.SUB {
+					return parser.MakeOperationNode(
+						parser.MUL,
+						parser.MakeValueNode("-1"),
+						right,
+					), nil
+				}
+				if ast.Type == parser.MUL || ast.Type == parser.DIV {
+					return parser.MakeValueNode("0"), nil
+				}
+			} else if left.Value == "1" {
+				if ast.Type == parser.MUL {
+					return right, nil
+				}
 			}
-			return fmt.Sprintf("(x - %s)", right), nil
-		}
-		if ast.Right.Type == parser.X {
-			var left, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(%s - x)", left), nil
+
+			return parser.Node{
+				Type:  ast.Type,
+				Left:  &left,
+				Right: &right,
+			}, nil
 		}
 
-		var left, err = Calculate(*ast.Left, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		var right string
-		right, err = Calculate(*ast.Right, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(left, "x") || strings.Contains(right, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var leftF, _ = strconv.ParseFloat(left, 64)
-		var rightF, _ = strconv.ParseFloat(right, 64)
-
-		result = leftF - rightF
-
-	case parser.MUL:
-		if ast.Left.Type == parser.X && ast.Right.Type == parser.X {
-			return parser.ASTToString(ast), nil
-		}
-		if ast.Left.Type == parser.X {
-			var right, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(x * %s)", right), nil
-		}
-		if ast.Right.Type == parser.X {
-			var left, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(%s * x)", left), nil
-		}
-
-		var left, err = Calculate(*ast.Left, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		var right string
-		right, err = Calculate(*ast.Right, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(left, "x") || strings.Contains(right, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var leftF, _ = strconv.ParseFloat(left, 64)
-		var rightF, _ = strconv.ParseFloat(right, 64)
-
-		result = leftF * rightF
-
-	case parser.DIV:
-		if ast.Left.Type == parser.X && ast.Right.Type == parser.X {
-			return parser.ASTToString(ast), nil
-		}
-		if ast.Left.Type == parser.X {
-			var right, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(x / %s)", right), nil
-		}
-		if ast.Right.Type == parser.X {
-			var left, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(%s / x)", left), nil
-		}
-
-		var right, err = Calculate(*ast.Right, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(right, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var rightF, _ = strconv.ParseFloat(right, 64)
-
-		if rightF == 0 {
-			return "", errors.MathError{Message: "division by zero"}
-		}
-
-		var left string
-		left, err = Calculate(*ast.Left, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(left, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var leftF, _ = strconv.ParseFloat(left, 64)
-
-		result = leftF / rightF
-
-	case parser.POW:
-		if ast.Left.Type == parser.X && ast.Right.Type == parser.X {
-			return parser.ASTToString(ast), nil
-		}
-		if ast.Left.Type == parser.X {
-			var right, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(x ^ %s)", right), nil
-		}
-		if ast.Right.Type == parser.X {
-			var left, err = Calculate(*ast.Right, variables, mode)
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("(%s ^ x)", left), nil
-		}
-
-		var left, err = Calculate(*ast.Left, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		var right string
-		right, err = Calculate(*ast.Right, variables, mode)
-		if err != nil {
-			return "", err
-		}
-
-		if strings.Contains(left, "x") || strings.Contains(right, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var leftF, _ = strconv.ParseFloat(left, 64)
-		var rightF, _ = strconv.ParseFloat(right, 64)
-
-		if leftF == 0 && rightF == 0 {
-			return "", errors.MathError{Message: "zero to the power of zero"}
-		}
-
-		result = math.Pow(leftF, rightF)
-
-	case parser.VALUE:
-		var val, err = strconv.ParseFloat(ast.Value, 64)
-		if err != nil {
-			return "", err
-		}
-
-		result = val
+		return processValues(ast.Type, left, right)
 
 	case parser.FUNCTION:
 		if ast.Left.Type == parser.X {
-			return parser.ASTToString(ast), nil
+			return ast, nil
 		}
 
 		var function, _ = defined_identifiers.Functions[ast.Value]
-		var bodySTR, err = Calculate(*ast.Left, variables, mode)
-
-		if strings.Contains(bodySTR, "x") {
-			return parser.ASTToString(ast), nil
-		}
-
-		var body, _ = strconv.ParseFloat(bodySTR, 64)
+		var body, err = Calculate(*ast.Left, variables)
 
 		if err != nil {
-			return "", err
+			return parser.Node{}, err
+		}
+
+		if body.Type != parser.VALUE {
+			return parser.MakeFunctionNode(ast.Value, body), nil
+		}
+
+		var bodyF, _ = strconv.ParseFloat(body.Value, 64)
+
+		if err != nil {
+			return parser.Node{}, err
 		}
 
 		if ast.Value == "sqrt" {
-			if body < 0 {
-				return "", errors.MathError{Message: "square root of a non-zero negative number"}
+			if bodyF < 0 {
+				return parser.Node{}, errors.MathError{Message: "square root of a non-zero negative number"}
 			}
 		} else if ast.Value == "ln" || ast.Value == "log" {
-			if body <= 0 {
-				return "", errors.MathError{Message: "natural logarithm of a negative number"}
+			if bodyF <= 0 {
+				return parser.Node{}, errors.MathError{Message: "natural logarithm of a negative number"}
 			}
 		} else if ast.Value == "asin" || ast.Value == "acos" || ast.Value == "atanh" {
-			if -1.0 > body || body > 1 {
-				return "", errors.MathError{Message: "asin/acos/atanh of a number not between -1 and 1"}
+			if -1.0 > bodyF || bodyF > 1 {
+				return parser.Node{}, errors.MathError{Message: "asin/acos/atanh of a number not between -1 and 1"}
 			}
 		} else if ast.Value == "acosh" {
-			if body < 1 {
-				return "", errors.MathError{Message: "acosh of a number smaller than 1"}
+			if bodyF < 1 {
+				return parser.Node{}, errors.MathError{Message: "acosh of a number smaller than 1"}
 			}
 		}
 
-		result = function(body)
+		var resultS = strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", function(bodyF)), "0"), ".")
+		return parser.MakeValueNode(resultS), nil
+
+	case parser.VALUE:
+		var _, err = strconv.ParseFloat(ast.Value, 64)
+		if err != nil {
+			return parser.Node{}, err
+		}
+
+		return ast, nil
 
 	case parser.VARIABLE:
 		var value, ok = variables[ast.Value]
 		if !ok {
-			return "", errors.UndefinedVariableError{Name: ast.Value}
+			return parser.Node{}, errors.UndefinedVariableError{Name: ast.Value}
 		}
 
-		result = value
+		var valueS = strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", value), "0"), ".")
+		return parser.MakeValueNode(valueS), nil
+
 	case parser.X:
-		return "x", nil
+		return ast, nil
 	default:
-		return "", errors.NotImplementedYetError{}
+		return parser.Node{}, errors.NotImplementedYetError{}
 	}
-	if mode == 1 {
-		return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", math.Round(result)), "0"), "."), nil
+}
+
+func processValues(op parser.NodeType, left parser.Node, right parser.Node) (parser.Node, error) {
+	var leftF, err = strconv.ParseFloat(left.Value, 64)
+	if err != nil {
+		return parser.Node{}, err
 	}
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", result), "0"), "."), nil
+
+	var rightF float64
+	rightF, err = strconv.ParseFloat(right.Value, 64)
+	if err != nil {
+		return parser.Node{}, err
+	}
+
+	var result float64
+
+	switch op {
+	case parser.ADD:
+		result = leftF + rightF
+	case parser.SUB:
+		result = leftF - rightF
+	case parser.MUL:
+		result = leftF * rightF
+	case parser.DIV:
+		if rightF == 0 {
+			return parser.Node{}, errors.MathError{Message: "division by zero"}
+		}
+		result = leftF / rightF
+	case parser.POW:
+		if leftF == 0 && rightF == 0 {
+			return parser.Node{}, errors.MathError{Message: "zero to the power of zero"}
+		}
+		result = math.Pow(leftF, rightF)
+	}
+
+	var resultS = strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.14f", result), "0"), ".")
+	return parser.MakeValueNode(resultS), nil
 }

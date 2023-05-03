@@ -70,3 +70,9 @@ type AlreadyDefinedIdentifierError struct {
 func (err AlreadyDefinedIdentifierError) Error() string {
 	return fmt.Sprintf("'%s' is a %s, you can not redefine it", err.Name, err.IdentifierType)
 }
+
+type UnexpectedError struct{}
+
+func (err UnexpectedError) Error() string {
+	return "Unexpected error"
+}
