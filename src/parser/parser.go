@@ -384,7 +384,12 @@ func ASTToString(ast Node) string {
 	case VARIABLE:
 		return ast.Value
 	case FUNCTION:
-		return fmt.Sprintf("%s( %s )", ast.Value, ASTToString(*ast.Left))
+		var resultS, ok = strings.CutPrefix(ASTToString(*ast.Left), "(")
+		if ok {
+			resultS = strings.TrimSuffix(resultS, ")")
+		}
+
+		return fmt.Sprintf("%s(%s)", ast.Value, resultS)
 	case SET_VARIABLE:
 		return fmt.Sprintf("%s = %s", ast.Value, ASTToString(*ast.Left))
 	case X:
