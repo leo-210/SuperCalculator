@@ -365,6 +365,8 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 	}
 }
 
+// Utility functions
+
 func ASTToString(ast Node) string {
 	switch ast.Type {
 	case ADD:
@@ -389,5 +391,28 @@ func ASTToString(ast Node) string {
 		return "x"
 	default:
 		return ""
+	}
+}
+
+func MakeValueNode(value string) Node {
+	return Node{
+		Type:  VALUE,
+		Value: value,
+	}
+}
+
+func MakeOperationNode(op NodeType, left Node, right Node) Node {
+	return Node{
+		Type:  op,
+		Left:  &left,
+		Right: &right,
+	}
+}
+
+func MakeFunctionNode(function string, body Node) Node {
+	return Node{
+		Type:  FUNCTION,
+		Value: function,
+		Left:  &body,
 	}
 }
