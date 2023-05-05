@@ -88,7 +88,7 @@ func deriveNode(node parser.Node) parser.Node {
 				parser.MakeOperationNode(
 					parser.MUL,
 					right,
-					parser.MakeFunctionNode("ln", *node.Right),
+					parser.MakeFunctionNode("ln", *node.Left),
 				),
 			),
 		)
