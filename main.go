@@ -17,7 +17,7 @@ func main() {
 	fmt.Printf("Welcome to the %s version %s ! Type something for the calculator to do.\n"+
 		"For help, type %s. To quit the application, type %s.\n\n",
 		green("SuperCalculator"),
-		green("0.1.0"),
+		green("0.3.0"),
 		cyan("help"),
 		cyan("quit"),
 	)
