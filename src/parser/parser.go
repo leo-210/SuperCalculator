@@ -258,20 +258,24 @@ func parseFactor(tokenList []Token, index int) (Node, int, error) {
 		token = tokenList[i]
 
 		switch token.Type {
-
 		case POWER:
 			var firstNode = node
 			var secondNode Node
 			secondNode, i, err = parseAtom(tokenList, i+1)
 
-			node = Node{Left: &firstNode, Right: &secondNode, Type: POW}
+			if firstNode.Type == VALUE &&
+				firstNode.Value == strconv.FormatFloat(defined_identifiers.Constants["e"], 'f', -1, 64) {
+				node = MakeFunctionNode("exp", secondNode)
+			} else {
+				node = Node{Left: &firstNode, Right: &secondNode, Type: POW}
+			}
 
 			if err != nil {
 				return node, i, err
 			}
+
 		default:
 			return node, i, nil
-
 		}
 	}
 
