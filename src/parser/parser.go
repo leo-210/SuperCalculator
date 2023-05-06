@@ -369,6 +369,31 @@ func parseAtom(tokenList []Token, index int) (Node, int, error) {
 	}
 }
 
+func (a Node) Equals(b Node) bool {
+	if a.Type != b.Type {
+		return false
+	}
+
+	switch a.Type {
+	case ADD, SUB, MUL, DIV, POW:
+		return a.Left.Equals(*b.Left) && a.Right.Equals(*b.Right)
+	case VALUE, VARIABLE:
+		return a.Value == b.Value
+	case FUNCTION:
+		return a.Value == b.Value && a.Left.Equals(*b.Left)
+	default:
+		return true
+	}
+}
+
+func (a Node) Decompose() (Node, Node) {
+	return *a.Left, *a.Right
+}
+
+func (a Node) DecomposeFunc(fn func(node Node) Node) (Node, Node) {
+	return fn(*a.Left), fn(*a.Right)
+}
+
 // Utility functions
 
 func ASTToString(ast Node) string {

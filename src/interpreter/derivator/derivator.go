@@ -2,6 +2,7 @@ package derivator
 
 import (
 	"SuperCalculator/src/interpreter/calculator"
+	"SuperCalculator/src/interpreter/simplifier"
 	"SuperCalculator/src/parser"
 )
 
@@ -13,7 +14,7 @@ func Derive(ast parser.Node, variables map[string]float64) (parser.Node, error) 
 		return ast, err
 	}
 
-	return calculator.Calculate(deriveNode(ast), variables)
+	return simplifier.Simplify(deriveNode(ast), variables)
 }
 
 func deriveNode(node parser.Node) parser.Node {

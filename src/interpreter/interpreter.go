@@ -5,6 +5,7 @@ import (
 	"SuperCalculator/src/errors"
 	"SuperCalculator/src/interpreter/calculator"
 	"SuperCalculator/src/interpreter/derivator"
+	"SuperCalculator/src/interpreter/simplifier"
 	"SuperCalculator/src/parser"
 	"fmt"
 	"math"
@@ -70,6 +71,11 @@ func Interpret(ast parser.Node, variables map[string]float64, mode int) (Result,
 
 	default:
 		result, err = calculator.Calculate(ast, variables)
+		if err != nil {
+			return Result{}, variables, err
+		}
+
+		result, err = simplifier.Simplify(result, variables)
 		if err != nil {
 			return Result{}, variables, err
 		}
