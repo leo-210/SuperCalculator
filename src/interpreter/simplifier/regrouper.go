@@ -1,6 +1,10 @@
 package simplifier
 
-import "SuperCalculator/src/parser"
+import (
+	"SuperCalculator/src/parser"
+	"math"
+	"strconv"
+)
 
 func regroup(ast parser.Node) parser.Node {
 	var node = ast
@@ -56,6 +60,27 @@ func regroup(ast parser.Node) parser.Node {
 					right,
 				)),
 			))
+		} else if right.Type == parser.VALUE {
+			var f, _ = strconv.ParseFloat(right.Value, 64)
+			if f == math.Round(f) {
+				if f == 0 {
+					node = parser.MakeValueNode("1")
+				} else if f == 1 {
+					node = left
+				} else if f > 1 {
+					node = left
+
+					// TODO : implement (x + y)^n and (x - y)^n formulas
+
+					for i := 1; i < int(f); i++ {
+						node = parser.MakeOperationNode(
+							parser.MUL,
+							left,
+							node,
+						)
+					}
+				}
+			}
 		}
 
 	case parser.MUL:
@@ -65,6 +90,38 @@ func regroup(ast parser.Node) parser.Node {
 		}
 
 		left, right = ast.DecomposeFunc(distribute)
+		left, right = regroup(left), regroup(right)
+
+		if left.Type == parser.X && right.Type == parser.VALUE {
+			return parser.MakeOperationNode(
+				parser.MUL,
+				right,
+				left,
+			)
+		}
+
+		if left.Type == parser.DIV {
+			return regroup(parser.MakeOperationNode(
+				parser.DIV,
+				parser.MakeOperationNode(
+					parser.MUL,
+					*left.Left,
+					right,
+				),
+				*left.Right,
+			))
+		}
+		if right.Type == parser.DIV {
+			return regroup(parser.MakeOperationNode(
+				parser.DIV,
+				parser.MakeOperationNode(
+					parser.MUL,
+					*right.Left,
+					left,
+				),
+				*right.Right,
+			))
+		}
 
 		var newLeft, newRight = parser.Node{Type: parser.MUL}, parser.Node{Type: parser.MUL}
 
@@ -95,17 +152,95 @@ func regroup(ast parser.Node) parser.Node {
 			}
 		} else {
 			newLeft.Right = &right
-			newRight = parser.MakeOperationNode(
-				parser.MUL,
-				*newRight.Left,
-				parser.MakeValueNode("1"),
-			)
+			newRight = *newRight.Left
 		}
 
 		node = parser.MakeOperationNode(
 			parser.MUL,
 			newLeft,
 			newRight,
+		)
+
+		if newRight.Equals(parser.MakeOperationNode(
+			parser.DIV,
+			parser.MakeValueNode("1"),
+			parser.MakeValueNode("1"),
+		)) || newRight.Equals(parser.MakeValueNode("1")) {
+			node = newLeft
+		}
+
+	case parser.DIV:
+		var newLeft, newRight = parser.Node{Type: parser.DIV}, parser.Node{Type: parser.DIV}
+
+		if left.Type == parser.MUL {
+			if left.Left.Equals(right) {
+				return *left.Right
+			}
+			if left.Right.Equals(right) {
+				return *left.Left
+			}
+
+			if left.Right.Type == parser.VALUE {
+				newLeft.Left = left.Right
+				newRight.Left = left.Left
+			} else {
+				newLeft.Left = left.Left
+				newRight.Left = left.Right
+			}
+		} else {
+			newLeft.Left = &left
+			newRight = parser.MakeOperationNode(
+				parser.DIV,
+				parser.MakeValueNode("1"),
+				parser.MakeValueNode("1"),
+			)
+		}
+
+		if right.Type == parser.MUL {
+			if right.Right.Type == parser.VALUE {
+				newLeft.Right = right.Right
+				newRight.Right = right.Left
+			} else {
+				newLeft.Right = right.Left
+				newRight.Right = right.Right
+			}
+		} else {
+			newLeft.Right = &right
+			newRight = *newRight.Left
+		}
+
+		if left.Equals(right) {
+			node = parser.MakeValueNode("1")
+		} else {
+			node = parser.MakeOperationNode(
+				parser.MUL,
+				newLeft,
+				newRight,
+			)
+		}
+
+		if newRight.Equals(parser.MakeOperationNode(
+			parser.DIV,
+			parser.MakeValueNode("1"),
+			parser.MakeValueNode("1"),
+		)) || newRight.Equals(parser.MakeValueNode("1")) {
+			node = newLeft
+		}
+
+		if node.Right.Type == parser.DIV && node.Right.Left.Equals(*node.Right.Right) {
+			node = *node.Left
+		}
+	case parser.ADD:
+		node = parser.MakeOperationNode(
+			node.Type,
+			left,
+			right,
+		)
+	case parser.SUB:
+		node = parser.MakeOperationNode(
+			node.Type,
+			left,
+			right,
 		)
 	}
 	return node

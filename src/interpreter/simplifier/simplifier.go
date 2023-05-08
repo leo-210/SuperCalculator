@@ -6,5 +6,13 @@ import (
 )
 
 func Simplify(ast parser.Node, variables map[string]float64) (parser.Node, error) {
-	return calculator.Calculate(regroup(ast), variables)
+	var node = ast
+	for i := 0; i < 10; i++ {
+		var newNode = regroup(node)
+		if newNode.Equals(node) {
+			break
+		}
+		node, _ = calculator.Calculate(newNode, variables)
+	}
+	return calculator.Calculate(node, variables)
 }
